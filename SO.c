@@ -42,7 +42,6 @@ int tamanhoFila(FilaDinamica *fila)
 }
 void enfileira(FilaDinamica *fila, Processo x)
 {
-    int help = 0;
     PtrNoFila aux;
     aux = (PtrNoFila)malloc(sizeof(NoFila));
     aux->x = x;
@@ -56,26 +55,10 @@ void enfileira(FilaDinamica *fila, Processo x)
     }
     else
     {
-        PtrNoFila ptr;
-        for (ptr = fila->inicio; ptr != NULL; ptr = ptr->proximo)
-        {
-            //verifica se já existe
-            if (ptr->x.processo == x.processo)
-            {
-                help = 1;
-            }
-        }
-        if (help == 0)
-        {
             aux->proximo = fila->fim->proximo;
             fila->fim->proximo = aux;
             fila->fim = fila->fim->proximo;
             fila->tamanho++;
-        }
-        else
-        {
-            printf("Valor ja inserido\n");
-        }
     }
 }
 Processo desenfileira(FilaDinamica *fila)
@@ -134,6 +117,7 @@ Processo *lerArquivo(int *tamanho)
     if (arq == NULL)
     {
         printf("Erro ao abrir arquivo");
+        exit(1);
     }
 
     // lendo o tamanho;
@@ -195,9 +179,68 @@ void desempilhaApresentando(FilaDinamica *fila)
         printf("|%d|-----", tempo);
         p = desenfileira(fila);
         tempo += p.tempo;
-        printf("%c-----",p.processo);
+        printf("%c-----", p.processo);
     }
     printf("|%d|\n", tempo);
+}
+
+// retorna 1 para sim 0 nao
+int ProcessoExiste(Processo *vetor, int tamanho)
+{
+    for (int i = 0; i < tamanho; i++)
+    {
+        if (vetor[i].tempo != 0)
+        {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum)
+{
+    FilaDinamica fila;
+    Processo proximo;
+    int ArrivalTime = 0;
+    iniciaFila(&fila);
+    int tempo = 0;
+    int encontrou = 0;
+    int indice;
+    while (ProcessoExiste(vetor, tamanho))
+    {
+        encontrou = 0;
+        for (int i = 0; i < tamanho; i++)
+        {
+            if (ArrivalTime == vetor[i].chegada)
+            {
+                proximo = vetor[i];
+                encontrou = 1;
+                indice = i;
+            } 
+        }
+
+        //proximo que eu tenho que empilhar
+        //porem só empilho 5;
+        //so enfileira depois de achar, se nao soma ++arrivaltime
+        if(encontrou)
+        {
+            proximo.tempo -= quantum;
+            if(proximo.tempo < 0)
+            {
+                tempo += (proximo.tempo+5);
+                proximo.tempo = 0;
+            } else {
+                tempo += quantum;
+            }
+            proximo.chegada = tempo;
+            enfileira(&fila, proximo);
+            //depois de enfileirar atualiza
+            vetor[indice] = proximo;
+        } else {
+            ArrivalTime++;
+        }
+    }
+    return fila;
 }
 
 int main()
@@ -205,14 +248,10 @@ int main()
     int tamanho;
     Processo *vetor = lerArquivo(&tamanho);
 
-    FilaDinamica f;
-    iniciaFila(&f);
-    
-    
+    FilaDinamica f = roundRobin(vetor, tamanho, 5);
     printf("tamanho = %d\n\n", tamanho);
     for (int i = 0; i < tamanho; i++)
     {
-        enfileira(&f,vetor[i]);
         printf("Processos[%d]:%c, %d, %d, %d\n", i, vetor[i].processo, vetor[i].tempo, vetor[i].chegada, vetor[i].prioridade);
     }
     imprimeFila(&f);
