@@ -55,10 +55,10 @@ void enfileira(FilaDinamica *fila, Processo x)
     }
     else
     {
-            aux->proximo = fila->fim->proximo;
-            fila->fim->proximo = aux;
-            fila->fim = fila->fim->proximo;
-            fila->tamanho++;
+        aux->proximo = fila->fim->proximo;
+        fila->fim->proximo = aux;
+        fila->fim = fila->fim->proximo;
+        fila->tamanho++;
     }
 }
 Processo desenfileira(FilaDinamica *fila)
@@ -200,9 +200,10 @@ int ProcessoExiste(Processo *vetor, int tamanho)
 FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum)
 {
     FilaDinamica fila;
-    Processo proximo;
-    int ArrivalTime = 0;
     iniciaFila(&fila);
+    Processo proximo;
+
+    int ArrivalTime = 0;
     int tempo = 0;
     int encontrou = 0;
     int indice;
@@ -211,32 +212,40 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum)
         encontrou = 0;
         for (int i = 0; i < tamanho; i++)
         {
-            if (ArrivalTime == vetor[i].chegada)
+            if (ArrivalTime == vetor[i].chegada && vetor[i].tempo != 0)
             {
                 proximo = vetor[i];
                 encontrou = 1;
                 indice = i;
-            } 
+                break;
+            }
         }
 
-        //proximo que eu tenho que empilhar
-        //porem só empilho 5;
-        //so enfileira depois de achar, se nao soma ++arrivaltime
-        if(encontrou)
+        // proximo que eu tenho que empilhar
+        // porem só empilho 5;
+        // so enfileira depois de achar, se nao soma ++arrivaltime
+        if (encontrou)
         {
-            proximo.tempo -= quantum;
-            if(proximo.tempo < 0)
+            //verifica se posso tirar 5 do tempo
+            if (vetor[indice].tempo >= quantum)
             {
-                tempo += (proximo.tempo+5);
-                proximo.tempo = 0;
-            } else {
-                tempo += quantum;
+                vetor[indice].tempo -= quantum;
+                proximo.tempo = 5;
             }
+            else
+            {
+                proximo.tempo = vetor[indice].tempo;
+                vetor[indice].tempo = 0;
+            }
+            //defino as variaveis novas para enfileirar na fila
+            tempo += proximo.tempo;
             proximo.chegada = tempo;
+            vetor[indice].chegada = tempo;
             enfileira(&fila, proximo);
-            //depois de enfileirar atualiza
-            vetor[indice] = proximo;
-        } else {
+        }
+        else
+        {
+            //caso nao encontre, procure o proximo arrivelTime
             ArrivalTime++;
         }
     }
