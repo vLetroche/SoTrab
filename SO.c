@@ -173,12 +173,20 @@ void desempilhaApresentando(FilaDinamica *fila)
     int aux = fila->tamanho;
     Processo p;
     int tempo = 0;
-
+    char processos[aux];
+    int tempoEspera[aux];
+    int tempoResposta[aux];
+    p.
     for (int i = 0; i < aux; i++)
     {
+        processos[i] = p.processo;
+        //salvando cada tempo em cada processo
+        tempoResposta[i] += tempo;
+        //termina
         printf("|%d|-----", tempo);
         p = desenfileira(fila);
         tempo += p.tempo;
+        //processo
         printf("%c-----", p.processo);
     }
     printf("|%d|\n", tempo);
@@ -199,6 +207,7 @@ int ProcessoExiste(Processo *vetor, int tamanho)
 
 FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum)
 {
+    int vetorR[tamanho];
     FilaDinamica fila;
     iniciaFila(&fila);
     Processo proximo;
