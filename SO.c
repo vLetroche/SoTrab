@@ -173,20 +173,14 @@ void desempilhaApresentando(FilaDinamica *fila)
     int aux = fila->tamanho;
     Processo p;
     int tempo = 0;
-    char processos[aux];
-    int tempoEspera[aux];
-    int tempoResposta[aux];
-    p.
+
     for (int i = 0; i < aux; i++)
     {
-        processos[i] = p.processo;
-        //salvando cada tempo em cada processo
-        tempoResposta[i] += tempo;
-        //termina
+        // termina
         printf("|%d|-----", tempo);
         p = desenfileira(fila);
         tempo += p.tempo;
-        //processo
+        // processo
         printf("%c-----", p.processo);
     }
     printf("|%d|\n", tempo);
@@ -205,14 +199,21 @@ int ProcessoExiste(Processo *vetor, int tamanho)
     return 0;
 }
 
-FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum)
+FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, float* TME, float* TMR)
 {
-    int vetorR[tamanho];
     FilaDinamica fila;
     iniciaFila(&fila);
     Processo proximo;
-
-    int ArrivalTime = 0;
+    int endTime[tamanho];
+    int arrivalTime[tamanho];
+    int cpuTime[tamanho];
+    //definindo cada arrivaltime da 
+    for (int i = 0; i < tamanho; i++)
+    {
+        arrivalTime[i] = vetor[i].chegada;
+        cpuTime[i] = vetor[i].tempo;
+    }
+    int contador = 0;
     int tempo = 0;
     int encontrou = 0;
     int indice;
@@ -221,7 +222,7 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum)
         encontrou = 0;
         for (int i = 0; i < tamanho; i++)
         {
-            if (ArrivalTime == vetor[i].chegada && vetor[i].tempo != 0)
+            if (contador == vetor[i].chegada && vetor[i].tempo != 0)
             {
                 proximo = vetor[i];
                 encontrou = 1;
@@ -232,11 +233,12 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum)
 
         // proximo que eu tenho que empilhar
         // porem só empilho 5;
-        // so enfileira depois de achar, se nao soma ++arrivaltime
+        // so enfileira depois de achar, se nao soma ++contador
         if (encontrou)
         {
-            //verifica se posso tirar 5 do tempo
-            if (vetor[indice].tempo >= quantum)
+            encontrou = 0;
+            // verifica se posso tirar 5 do tempo
+            if (vetor[indice].tempo > quantum)
             {
                 vetor[indice].tempo -= quantum;
                 proximo.tempo = 5;
@@ -245,34 +247,61 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum)
             {
                 proximo.tempo = vetor[indice].tempo;
                 vetor[indice].tempo = 0;
+                // hora que acaba processo
+                encontrou = 1;
             }
-            //defino as variaveis novas para enfileirar na fila
+            // defino as variaveis novas para enfileirar na fila
             tempo += proximo.tempo;
+
             proximo.chegada = tempo;
             vetor[indice].chegada = tempo;
             enfileira(&fila, proximo);
+
+            if (encontrou)
+            {
+                endTime[indice] = tempo;
+            }
         }
         else
         {
-            //caso nao encontre, procure o proximo arrivelTime
-            ArrivalTime++;
+            // caso nao encontre, procure o proximo processo que começa
+            contador++;
         }
     }
+
+    // calculando tempoEspera/tempoResposta
+    int somadorE = 0;
+    int somadorR = 0;
+    for (int i = 0; i < tamanho; i++)
+    {
+        somadorE += (endTime[i] - arrivalTime[i]) - cpuTime[i];
+        printf("%d = (%d - %d) - %d\n", somadorE, endTime[i], arrivalTime[i], cpuTime[i]);
+        somadorR += endTime[i] - arrivalTime[i];
+    }
+
+    *TME = (float)somadorE / tamanho;
+    *TMR = (float)somadorR / tamanho;
+    
+    // TMEA = (processo final - arrival time) - cpu time
     return fila;
 }
 
 int main()
 {
     int tamanho;
+    float TME, TMR;
     Processo *vetor = lerArquivo(&tamanho);
+    Processo *copia = vetor;
 
-    FilaDinamica f = roundRobin(vetor, tamanho, 5);
+    FilaDinamica RoundRobin = roundRobin(copia, tamanho, 5, &TME, &TMR);
     printf("tamanho = %d\n\n", tamanho);
     for (int i = 0; i < tamanho; i++)
     {
         printf("Processos[%d]:%c, %d, %d, %d\n", i, vetor[i].processo, vetor[i].tempo, vetor[i].chegada, vetor[i].prioridade);
     }
-    imprimeFila(&f);
 
-    desempilhaApresentando(&f);
+    imprimeFila(&RoundRobin);
+
+    printf("TME: %.2f\nTMR: %.2f\n", TME, TMR);
+    desempilhaApresentando(&RoundRobin);
 }
