@@ -345,12 +345,22 @@ FilaDinamica STF(Processo *vetor, int tamanho, float *TME, float *TMR)
                         enfileira(&fila, empilha);
                     }
 
+                }else {
+                    antigo = &vetor[i];
                 }
+
                 if(antigo->tempo == 0)
                 {
+                    antigo = NULL;
                     //endTime[]
-                }
+                } else {
                     antigo = &vetor[i];
+                }
+
+                if(tempo == somaCpuTime)
+                {
+                    contador = 0;
+                }
 
                 //se 
 
