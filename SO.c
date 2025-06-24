@@ -199,15 +199,15 @@ int ProcessoExiste(Processo *vetor, int tamanho)
     return 0;
 }
 
-FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, float* TME, float* TMR)
+FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, float *TME, float *TMR)
 {
     FilaDinamica fila;
     iniciaFila(&fila);
-    Processo proximo;
+    Processo empilha;
     int endTime[tamanho];
     int arrivalTime[tamanho];
     int cpuTime[tamanho];
-    //definindo cada arrivaltime da 
+    // definindo cada arrivaltime da
     for (int i = 0; i < tamanho; i++)
     {
         arrivalTime[i] = vetor[i].chegada;
@@ -224,14 +224,14 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, float* TME, f
         {
             if (contador == vetor[i].chegada && vetor[i].tempo != 0)
             {
-                proximo = vetor[i];
+                empilha = vetor[i];
                 encontrou = 1;
                 indice = i;
                 break;
             }
         }
 
-        // proximo que eu tenho que empilhar
+        // empilha que eu tenho que empilhar
         // porem só empilho 5;
         // so enfileira depois de achar, se nao soma ++contador
         if (encontrou)
@@ -241,21 +241,21 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, float* TME, f
             if (vetor[indice].tempo > quantum)
             {
                 vetor[indice].tempo -= quantum;
-                proximo.tempo = 5;
+                empilha.tempo = 5;
             }
             else
             {
-                proximo.tempo = vetor[indice].tempo;
+                empilha.tempo = vetor[indice].tempo;
                 vetor[indice].tempo = 0;
                 // hora que acaba processo
                 encontrou = 1;
             }
             // defino as variaveis novas para enfileirar na fila
-            tempo += proximo.tempo;
+            tempo += empilha.tempo;
 
-            proximo.chegada = tempo;
+            empilha.chegada = tempo;
             vetor[indice].chegada = tempo;
-            enfileira(&fila, proximo);
+            enfileira(&fila, empilha);
 
             if (encontrou)
             {
@@ -281,11 +281,76 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, float* TME, f
 
     *TME = (float)somadorE / tamanho;
     *TMR = (float)somadorR / tamanho;
-    
+
     // TMEA = (processo final - arrival time) - cpu time
     return fila;
 }
 
+FilaDinamica STF(Processo *vetor, int tamanho, float *TME, float *TMR)
+{
+    FilaDinamica fila;
+    iniciaFila(&fila);
+    FilaDinamica filaAux;
+    iniciaFila(&filaAux);
+    Processo empilha;
+    int arrivalTime[tamanho];
+    int cpuTime[tamanho];
+    int endTime[tamanho];
+    int contador = 0;
+    int tempo = 0;
+    int encontrou = 0;
+    // definindo cada arrivaltime da
+    for (int i = 0; i < tamanho; i++)
+    {
+        arrivalTime[i] = vetor[i].chegada;
+        cpuTime[i] = vetor[i].tempo;
+    }
+
+    while (ProcessoExiste(vetor, tamanho))
+    {
+        encontrou = 0;
+        for (int i = 0; i < tamanho; i++)
+        {
+            if (contador == vetor[i].chegada && vetor[i].tempo != 0)
+            {
+                enfileira(&filaAux, vetor[i]);
+                encontrou = 1;
+                break;
+            }
+        }
+
+        // se eu encontrar tenho q verificar qual é menor
+        if (encontrou && filaAux.tamanho > 1)
+        {
+            PtrNoFila aux;
+            int menorTempo = filaAux.inicio->x.tempo;
+            // verificar se um é menor que o outro
+            // verifico qual é menor
+            for(PtrNoFila i = filaAux.inicio; i != NULL; i = filaAux.inicio->proximo){
+                if(menorTempo > i->x.tempo)
+                {
+                    menorTempo = i->x.tempo;
+                    aux = i;
+                }
+            }
+
+                
+                enfileira(&fila, empilha);
+
+            // defino as variaveis novas para enfileirar na fila
+
+            if (encontrou)
+            {
+                endTime[indice] = tempo;
+            }
+        }
+        else
+        {
+            // caso nao encontre, procure o proximo processo que começa
+            contador++;
+        }
+    }
+}
 int main()
 {
     int tamanho;
