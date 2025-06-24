@@ -290,66 +290,82 @@ FilaDinamica STF(Processo *vetor, int tamanho, float *TME, float *TMR)
 {
     FilaDinamica fila;
     iniciaFila(&fila);
-    FilaDinamica filaAux;
-    iniciaFila(&filaAux);
     Processo empilha;
+    Processo *antigo = NULL;
     int arrivalTime[tamanho];
     int cpuTime[tamanho];
+    int somaCpuTime = 0;
     int endTime[tamanho];
+    //contador considerado como arrivalTime
     int contador = 0;
     int tempo = 0;
-    int encontrou = 0;
     // definindo cada arrivaltime da
     for (int i = 0; i < tamanho; i++)
     {
         arrivalTime[i] = vetor[i].chegada;
         cpuTime[i] = vetor[i].tempo;
+        somaCpuTime += cpuTime[i];
     }
 
     while (ProcessoExiste(vetor, tamanho))
     {
-        encontrou = 0;
+        //reseta se chegar no fim, e so finaliza se nenhum processo existir
+        if(contador == somaCpuTime)
+        {
+            contador = 0;
+        }
+
+
         for (int i = 0; i < tamanho; i++)
         {
+            //verificar Tempo do primeiro processo e verificar todos os arrivalTime até esse processo acabar
+            //dependendo do arrivalTime, e se o tempo for menor, esse novo processo toma prioridade
             if (contador == vetor[i].chegada && vetor[i].tempo != 0)
             {
-                enfileira(&filaAux, vetor[i]);
-                encontrou = 1;
-                break;
-            }
-        }
-
-        // se eu encontrar tenho q verificar qual é menor
-        if (encontrou && filaAux.tamanho > 1)
-        {
-            PtrNoFila aux;
-            int menorTempo = filaAux.inicio->x.tempo;
-            // verificar se um é menor que o outro
-            // verifico qual é menor
-            for(PtrNoFila i = filaAux.inicio; i != NULL; i = filaAux.inicio->proximo){
-                if(menorTempo > i->x.tempo)
+                if(antigo != NULL)
                 {
-                    menorTempo = i->x.tempo;
-                    aux = i;
+                    // fazer verificacao de prioridade
+                    // fazer a operacao de adicionar na fila
+                    // pois já existe um antigo e consigo verificar qual deles é maior
+                    if(antigo->tempo-contador > vetor[i].tempo)
+                    {
+                        //parando no arrivalTime
+                        //se condicao verdadeira, então vetor[i] assume prioridade
+                        antigo->tempo -= contador;
+                        empilha.tempo = contador;
+                        tempo+= empilha.tempo;
+                        empilha.processo = antigo->processo; 
+                        enfileira(&fila, empilha);
+                    } else {
+                        //se o outro nao é menor entao o que é empilhado é o proprio antigo
+                        empilha.tempo = antigo->tempo;
+                        empilha.processo = antigo->processo;
+                        tempo+= empilha.tempo;
+                        antigo->tempo = 0;
+                        enfileira(&fila, empilha);
+                    }
+
                 }
-            }
+                if(antigo->tempo == 0)
+                {
+                    //endTime[]
+                }
+                    antigo = &vetor[i];
 
-                
-                enfileira(&fila, empilha);
+                //se 
 
-            // defino as variaveis novas para enfileirar na fila
 
-            if (encontrou)
-            {
-                endTime[indice] = tempo;
+
+
+
+
+
             }
         }
-        else
-        {
-            // caso nao encontre, procure o proximo processo que começa
-            contador++;
-        }
+        
+        contador++;
     }
+    return fila;
 }
 int main()
 {
@@ -358,15 +374,16 @@ int main()
     Processo *vetor = lerArquivo(&tamanho);
     Processo *copia = vetor;
 
-    FilaDinamica RoundRobin = roundRobin(copia, tamanho, 5, &TME, &TMR);
+    //FilaDinamica RoundRobin = roundRobin(copia, tamanho, 5, &TME, &TMR);
+    FilaDinamica fon = STF(copia, tamanho, &TME, &TMR);
     printf("tamanho = %d\n\n", tamanho);
     for (int i = 0; i < tamanho; i++)
     {
         printf("Processos[%d]:%c, %d, %d, %d\n", i, vetor[i].processo, vetor[i].tempo, vetor[i].chegada, vetor[i].prioridade);
     }
 
-    imprimeFila(&RoundRobin);
+    imprimeFila(&fon);
 
     printf("TME: %.2f\nTMR: %.2f\n", TME, TMR);
-    desempilhaApresentando(&RoundRobin);
+    desempilhaApresentando(&fon);
 }
