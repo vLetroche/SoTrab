@@ -236,7 +236,7 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, int *endTime)
             if (vetor[indice].tempo > quantum)
             {
                 vetor[indice].tempo -= quantum;
-                empilha.tempo = 5;
+                empilha.tempo = quantum;
             }
             else
             {
@@ -360,7 +360,7 @@ FilaDinamica STRF(Processo *vetor, int tamanho, int *endTime)
     int tempoAtual = 0;
     Processo *processoAtualNaCPU = NULL; // O processo que está executando no momento
 
-    // Loop principal: Continua enquanto ainda houver processos que não terminaram
+    // Continua enquanto ainda houver processos que não terminaram
     while (ProcessoExiste(vetor,tamanho))
     {
 
@@ -550,7 +550,7 @@ int main()
         copia[i] = vetor[i]; // Cópia membro a membro (shallow, mas ok se Processo não tiver ponteiros)
     }
 
-    fila = roundRobin(copia, tamanho,5,endTime);
+    fila = roundRobin(copia, tamanho,3,endTime);
     geraArquivo(&fila, vetor, tamanho, endTime,"RoundRobin.txt");
 
     printf("tamanho = %d\n\n", tamanho);
