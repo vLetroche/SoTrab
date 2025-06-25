@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <limits.h>
 
 typedef struct NoFila *PtrNoFila;
 
@@ -207,7 +208,7 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, float *TME, f
     int endTime[tamanho];
     int arrivalTime[tamanho];
     int cpuTime[tamanho];
-    // definindo cada arrivaltime da
+    // definindo cada arrivaltime/cpuTime do processo para calcular TME/TMR
     for (int i = 0; i < tamanho; i++)
     {
         arrivalTime[i] = vetor[i].chegada;
@@ -217,11 +218,13 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, float *TME, f
     int tempo = 0;
     int encontrou = 0;
     int indice;
+    //while até todos os precossos acabarem(verifica se tempo = 0)
     while (ProcessoExiste(vetor, tamanho))
     {
         encontrou = 0;
         for (int i = 0; i < tamanho; i++)
         {
+            //encontra o processo a ser executado e salva indice
             if (contador == vetor[i].chegada && vetor[i].tempo != 0)
             {
                 empilha = vetor[i];
@@ -356,26 +359,120 @@ FilaDinamica STF(Processo *vetor, int tamanho, float *TME, float *TMR)
                 } else {
                     antigo = &vetor[i];
                 }
-
-                if(tempo == somaCpuTime)
-                {
-                    contador = 0;
-                }
-
-                //se 
-
-
-
-
-
-
-
             }
         }
         
         contador++;
     }
     return fila;
+}
+
+FilaDinamica STRF(Processo *vetor, int tamanho, float *TME, float *TMR) {
+    FilaDinamica filaSaida;
+    iniciaFila(&filaSaida);
+    int arrivalTime[tamanho];
+    int cpuTime[tamanho];
+    int endTime[tamanho];
+    int indice = 0;
+
+    // Certifique-se de que cada processo tem um 'tempoRestante' inicializado com seu 'tempo' original
+    for (int i = 0; i < tamanho; i++) {
+        // Assumindo que 'tempo' é o tempo original necessário para o processo
+        // e que você o modifica durante a execução
+        arrivalTime[i] = vetor[i].chegada;
+        cpuTime[i] = vetor[i].tempo;
+    }
+
+    int tempoAtual = 0;
+    Processo *processoAtualNaCPU = NULL; // O processo que está executando no momento
+    int processosFinalizados = 0;
+
+    // Loop principal: Continua enquanto ainda houver processos que não terminaram
+    while (processosFinalizados < tamanho) {
+
+        Processo *melhorCandidato = NULL;
+        int menorTempoRestante = INT_MAX;//definimos o maximo de um inteiro
+        //para que quando ele verifique um menor sempre vai ser o primeiro a ser lido
+
+        // 1. Encontrar o processo de menor tempo restante entre os que já chegaram
+        for (int i = 0; i < tamanho; i++) {
+            if (vetor[i].chegada <= tempoAtual && vetor[i].tempo > 0) {
+                if (vetor[i].tempo < menorTempoRestante) {
+                    menorTempoRestante = vetor[i].tempo;
+                    melhorCandidato = &vetor[i];
+                    indice = i;
+                }
+                // Critério de desempate: se os tempos restantes são iguais, priorize o que chegou primeiro
+                else if (vetor[i].tempo == menorTempoRestante) {
+                    // CUIDADO: melhorCandidato pode ser NULL aqui se for o primeiro processo a ser encontrado com menorTempoRestante
+                    // Certifique-se de que melhorCandidato não é NULL antes de acessar 'chegada'
+                    if (melhorCandidato == NULL || vetor[i].chegada < melhorCandidato->chegada) {
+                         melhorCandidato = &vetor[i];
+                         indice = i;
+                    }
+                }
+            }
+        }
+
+        // 2. Executar o processo escolhido (ou CPU ociosa)
+        if (melhorCandidato != NULL) {
+            // Se o processo atual na CPU mudou (houve preempção ou um processo anterior terminou)
+            if (processoAtualNaCPU != melhorCandidato) {
+                // Se houve uma mudança de processo, resetamos o processoAtualNaCPU
+                // para o novo melhorCandidato. A lógica de enfileirar vai lidar com isso.
+            }
+            
+            processoAtualNaCPU = melhorCandidato; // Define o processo atual da CPU
+            processoAtualNaCPU->tempo--; // Decrementa o tempo restante do processo que está executando
+
+            // Lógica para empilhar de forma consolidada
+            Processo fatiaExecutada;
+            fatiaExecutada.processo = processoAtualNaCPU->processo;
+            fatiaExecutada.tempo = 1; // Por enquanto, é 1 unidade de tempo
+
+            // Verifica se a fila de saída está vazia OU se o último processo é diferente
+            if (filaSaida.fim == NULL || filaSaida.fim->x.processo != fatiaExecutada.processo) {
+                // Se a fila está vazia ou é um novo processo, enfileira um novo nó
+                enfileira(&filaSaida, fatiaExecutada);
+            } else {
+                // Se o último processo é o mesmo, apenas incrementa o tempo daquele último nó
+                filaSaida.fim->x.tempo++;
+            }
+        } else {
+            // Se nenhum processo está pronto para executar no tempoAtual (CPU ociosa)
+            // Aqui você pode decidir o que fazer:
+            // 1. Não fazer nada (apenas avança o contador)
+            // 2. Empilhar um "processo ocioso" para representar o tempo sem atividade.
+            // Para sua saída, talvez não seja necessário, mas é bom estar ciente.
+        }
+        tempoAtual++; // AVANÇA O RELÓGIO DO SISTEMA
+
+        // 3. Verificar se o processo atual terminou
+        if (processoAtualNaCPU != NULL && processoAtualNaCPU->tempo == 0) {
+            processosFinalizados++;
+            //defino o endtime de cada processo
+            endTime[indice] = tempoAtual;
+        }
+
+    }
+
+    // Calcular TME e TMR médios finais
+
+    // calculando tempoEspera/tempoResposta
+    int somadorE = 0;
+    int somadorR = 0;
+    for (int i = 0; i < tamanho; i++)
+    {
+        somadorE += (endTime[i] - arrivalTime[i]) - cpuTime[i];
+        printf("%d = (%d - %d) - %d\n", somadorE, endTime[i], arrivalTime[i], cpuTime[i]);
+        somadorR += endTime[i] - arrivalTime[i];
+    }
+
+    *TME = (float)somadorE / tamanho;
+    *TMR = (float)somadorR / tamanho;
+
+
+    return filaSaida;
 }
 int main()
 {
@@ -385,7 +482,7 @@ int main()
     Processo *copia = vetor;
 
     //FilaDinamica RoundRobin = roundRobin(copia, tamanho, 5, &TME, &TMR);
-    FilaDinamica fon = STF(copia, tamanho, &TME, &TMR);
+    FilaDinamica fon = roundRobin(copia, tamanho,5, &TME, &TMR);
     printf("tamanho = %d\n\n", tamanho);
     for (int i = 0; i < tamanho; i++)
     {
