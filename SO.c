@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <limits.h>
 
+#define QUANTUM 5
+
 typedef struct NoFila *PtrNoFila;
 
 typedef struct
@@ -200,7 +202,7 @@ int ProcessoExiste(Processo *vetor, int tamanho)
     return 0;
 }
 
-FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, int *endTime)
+FilaDinamica roundRobin(Processo *vetor, int tamanho, int *endTime)
 {
     FilaDinamica fila;
     iniciaFila(&fila);
@@ -232,11 +234,11 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int quantum, int *endTime)
         if (encontrou)
         {
             encontrou = 0;
-            // verifica se posso tirar 5 do tempo
-            if (vetor[indice].tempo > quantum)
+            // verifica se posso tirar QUANTUM do tempo
+            if (vetor[indice].tempo > QUANTUM)
             {
-                vetor[indice].tempo -= quantum;
-                empilha.tempo = quantum;
+                vetor[indice].tempo -= QUANTUM;
+                empilha.tempo = QUANTUM;
             }
             else
             {
@@ -550,14 +552,7 @@ int main()
         copia[i] = vetor[i]; // Cópia membro a membro (shallow, mas ok se Processo não tiver ponteiros)
     }
 
-    fila = roundRobin(copia, tamanho,3,endTime);
+    fila = roundRobin(copia, tamanho, endTime);
     geraArquivo(&fila, vetor, tamanho, endTime,"RoundRobin.txt");
-
-    printf("tamanho = %d\n\n", tamanho);
-    for (int i = 0; i < tamanho; i++)
-    {
-        printf("Processos[%d]:%c, %d, %d, %d\n", i, vetor[i].processo, vetor[i].tempo, vetor[i].chegada, vetor[i].prioridade);
-    }
-
     // desempilhaApresentando(&fon);
 }
