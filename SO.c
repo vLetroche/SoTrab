@@ -1,7 +1,9 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <string.h>
 
 #define QUANTUM 5
 
@@ -11,7 +13,7 @@ typedef struct
 {
     char processo;
     int tempo;
-    int chegada;
+    float chegada;
     int prioridade;
 } Processo;
 
@@ -85,13 +87,13 @@ Processo desenfileira(FilaDinamica *fila)
 
 void imprimeFila(FilaDinamica *fila, FILE *arq)
 {
-    fprintf(arq,"Fila = { ");
+    fprintf(arq, "Fila = { ");
     PtrNoFila ptr;
     for (ptr = fila->inicio; ptr != NULL; ptr = ptr->proximo)
     {
-        fprintf(arq,"%c ", ptr->x.processo);
+        fprintf(arq, "%c ", ptr->x.processo);
     }
-    fprintf(arq,"}\n");
+    fprintf(arq, "}\n");
 }
 
 void destroiFila(FilaDinamica *fila)
@@ -137,9 +139,9 @@ Processo *lerArquivo(int *tamanho)
     {
         printf("Erro ao malloc processos");
     }
-
+    int aux;
     char label[20];
-    for (int i = 1; i < 4; i++)
+    for (int i = 1; i <= 4; i++)
     {
         // ler a primeira strng
         fscanf(arq, "%s", label);
@@ -154,7 +156,9 @@ Processo *lerArquivo(int *tamanho)
                 fscanf(arq, " %d", &vet[j].tempo);
                 break;
             case 3:
-                fscanf(arq, " %d", &vet[j].chegada);
+                fscanf(arq, " %d", &aux);
+                printf("%d\n", aux);
+                vet[j].chegada = aux;
                 break;
             case 4:
                 fscanf(arq, " %d", &vet[j].prioridade);
@@ -202,13 +206,14 @@ int ProcessoExiste(Processo *vetor, int tamanho)
     return 0;
 }
 
+
 FilaDinamica roundRobin(Processo *vetor, int tamanho, int *endTime)
 {
     FilaDinamica fila;
     iniciaFila(&fila);
     Processo empilha;
-    
-    int contador = 0;
+
+    float contador = 0;
     int tempo = 0;
     int encontrou = 0;
     int indice;
@@ -251,7 +256,7 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int *endTime)
             tempo += empilha.tempo;
 
             empilha.chegada = tempo;
-            vetor[indice].chegada = tempo;
+            vetor[indice].chegada = tempo + 0.5;
             enfileira(&fila, empilha);
 
             if (encontrou)
@@ -262,96 +267,14 @@ FilaDinamica roundRobin(Processo *vetor, int tamanho, int *endTime)
         else
         {
             // caso nao encontre, procure o proximo processo que começa
-            contador++;
+            contador+= 0.5;
         }
     }
     // TMEA = (processo final - arrival time) - cpu time
     return fila;
 }
-/*
-FilaDinamica STF(Processo *vetor, int tamanho)
-{
-    FilaDinamica fila;
-    iniciaFila(&fila);
-    Processo empilha;
-    Processo *antigo = NULL;
-    int arrivalTime[tamanho];
-    int cpuTime[tamanho];
-    int somaCpuTime = 0;
-    int endTime[tamanho];
-    // contador considerado como arrivalTime
-    int contador = 0;
-    int tempo = 0;
-    // definindo cada arrivaltime da
-    for (int i = 0; i < tamanho; i++)
-    {
-        arrivalTime[i] = vetor[i].chegada;
-        cpuTime[i] = vetor[i].tempo;
-        somaCpuTime += cpuTime[i];
-    }
 
-    while (ProcessoExiste(vetor, tamanho))
-    {
-        // reseta se chegar no fim, e so finaliza se nenhum processo existir
-        if (contador == somaCpuTime)
-        {
-            contador = 0;
-        }
-
-        for (int i = 0; i < tamanho; i++)
-        {
-            // verificar Tempo do primeiro processo e verificar todos os arrivalTime até esse processo acabar
-            // dependendo do arrivalTime, e se o tempo for menor, esse novo processo toma prioridade
-            if (contador == vetor[i].chegada && vetor[i].tempo != 0)
-            {
-                if (antigo != NULL)
-                {
-                    // fazer verificacao de prioridade
-                    // fazer a operacao de adicionar na fila
-                    // pois já existe um antigo e consigo verificar qual deles é maior
-                    if (antigo->tempo - contador > vetor[i].tempo)
-                    {
-                        // parando no arrivalTime
-                        // se condicao verdadeira, então vetor[i] assume prioridade
-                        antigo->tempo -= contador;
-                        empilha.tempo = contador;
-                        tempo += empilha.tempo;
-                        empilha.processo = antigo->processo;
-                        enfileira(&fila, empilha);
-                    }
-                    else
-                    {
-                        // se o outro nao é menor entao o que é empilhado é o proprio antigo
-                        empilha.tempo = antigo->tempo;
-                        empilha.processo = antigo->processo;
-                        tempo += empilha.tempo;
-                        antigo->tempo = 0;
-                        enfileira(&fila, empilha);
-                    }
-                }
-                else
-                {
-                    antigo = &vetor[i];
-                }
-
-                if (antigo->tempo == 0)
-                {
-                    antigo = NULL;
-                    // endTime[]
-                }
-                else
-                {
-                    antigo = &vetor[i];
-                }
-            }
-        }
-
-        contador++;
-    }
-    return fila;
-}*/
-
-FilaDinamica STRF(Processo *vetor, int tamanho, int *endTime)
+FilaDinamica STF(Processo *vetor, int tamanho, int *endTime)
 {
     FilaDinamica filaSaida;
     iniciaFila(&filaSaida);
@@ -363,7 +286,7 @@ FilaDinamica STRF(Processo *vetor, int tamanho, int *endTime)
     Processo *processoAtualNaCPU = NULL; // O processo que está executando no momento
 
     // Continua enquanto ainda houver processos que não terminaram
-    while (ProcessoExiste(vetor,tamanho))
+    while (ProcessoExiste(vetor, tamanho))
     {
 
         Processo *melhorCandidato = NULL;
@@ -381,11 +304,10 @@ FilaDinamica STRF(Processo *vetor, int tamanho, int *endTime)
                     melhorCandidato = &vetor[i];
                     indice = i;
                 }
-                // Critério de desempate: se os tempos restantes são iguais, priorize o que chegou primeiro
+                // se os tempos restantes são iguais, priorize o que chegou primeiro
                 else if (vetor[i].tempo == menorTempoRestante)
                 {
-                    // CUIDADO: melhorCandidato pode ser NULL aqui se for o primeiro processo a ser encontrado com menorTempoRestante
-                    // Certifique-se de que melhorCandidato não é NULL antes de acessar 'chegada'
+
                     if (melhorCandidato == NULL || vetor[i].chegada < melhorCandidato->chegada)
                     {
                         melhorCandidato = &vetor[i];
@@ -402,7 +324,7 @@ FilaDinamica STRF(Processo *vetor, int tamanho, int *endTime)
             processoAtualNaCPU = melhorCandidato; // Define o processo atual da CPU
             processoAtualNaCPU->tempo--;          // Decrementa o tempo restante do processo que está executando
 
-            // Lógica para empilhar 
+            // Lógica para empilhar
             Processo fatiaExecutada;
             fatiaExecutada.processo = processoAtualNaCPU->processo;
             fatiaExecutada.tempo = 1; // Por enquanto, é 1 unidade de tempo
@@ -419,14 +341,7 @@ FilaDinamica STRF(Processo *vetor, int tamanho, int *endTime)
                 filaSaida.fim->x.tempo++;
             }
         }
-        else
-        {
-            // Se nenhum processo está pronto para executar no tempoAtual (CPU ociosa)
-            // Aqui você pode decidir o que fazer:
-            // 1. Não fazer nada (apenas avança o contador)
-            // 2. Empilhar um "processo ocioso" para representar o tempo sem atividade.
-            // Para sua saída, talvez não seja necessário, mas é bom estar ciente.
-        }
+
         tempoAtual++;
 
         // processo atual terminou
@@ -464,7 +379,7 @@ void geraArquivo(FilaDinamica *fila, Processo *p, int tamanhoP, int *endTime, ch
     fprintf(arq, "Tempo de Chegada dos processos:\n");
     for (int i = 0; i < tamanhoP; i++)
     {
-        fprintf(arq, "%d\t", p[i].chegada);
+        fprintf(arq, "%d\t", (int)p[i].chegada);
     }
     fprintf(arq, "\n\n\n");
 
@@ -494,7 +409,7 @@ void geraArquivo(FilaDinamica *fila, Processo *p, int tamanhoP, int *endTime, ch
     float TME = (float)somadorE / tamanhoP;
 
     int somadorR = 0;
-    fprintf(arq, "Tempo de Espera de cada processo:\n");
+    fprintf(arq, "Tempo de Resposta de cada processo:\n");
     for (int i = 0; i < tamanhoP; i++)
     {
         fprintf(arq, "%c\t", p[i].processo);
@@ -515,20 +430,102 @@ void geraArquivo(FilaDinamica *fila, Processo *p, int tamanhoP, int *endTime, ch
     fprintf(arq, "\n\n");
     fprintf(arq, "Tempo Médio de Espera: %.2f\n\n", TME);
 }
-
-void geraArquivoRoundRobin()
+/*
+Processo *lerArquivoSP(int *tamanho)
 {
-}
+    Processo *vet = (Processo *)malloc(50 * sizeof(Processo)); // aloco 50 posicoes pq nao sei quantos processos vai ler
+    // depois dou o realloc para o tamanho certo
+    int tam = 0;
+    char c;
+    char label[30] = "";
+    int indexL = 0;
+    FILE *arq = fopen("arquivo.txt", "r");
+    if (arq == NULL)
+    {
+        printf("Erro ao abrir arquivo");
+        exit(1);
+    }
 
+    // lendo o tamanho;
+
+    int aux = 0;
+    while ((c = fgetc(arq)) != EOF)
+    {
+        if (aux == 0)
+        {
+            label[indexL] = c;
+            indexL++;
+            if (c == ' ')
+            {
+                //label[indexL] = '\0';
+                aux = 1;
+                continue;
+            }
+        } else if (strcasecmp(label, "Processo") == 0)
+        {
+            printf("%c", c);
+            if (c == '\n')
+            {
+                break;
+            }else if (c != ' ')
+            {
+                tam++;
+            }
+        }
+
+        printf("%d - %s\n", indexL, label);
+
+        
+
+        // agora que temos definido o tamanho podemos simplesmente ler da outra maneira
+    }
+
+    vet = (Processo *)realloc(vet, tam * sizeof(Processo));
+    for (int i = 1; i < 4; i++)
+    {
+        // ler a primeira strng
+        fscanf(arq, "%s", label);
+        for (int j = 0; j < tam; j++)
+        {
+            switch (i)
+            {
+            case 1:
+                fscanf(arq, " %d", &vet[j].tempo);
+                break;
+            case 2:
+                fscanf(arq, " %d", &vet[j].chegada);
+                break;
+            case 3:
+                fscanf(arq, " %d", &vet[j].prioridade);
+                break;
+            default:
+                break;
+            }
+        }
+        fscanf(arq, "\n");
+    }
+    fclose(arq);
+    *tamanho = tam;
+    return vet;
+}
+*/
 int main()
 {
     int tamanho;
     int *endTime;
     Processo *vetor = lerArquivo(&tamanho);
+
+    printf("tamanho = %d\n", tamanho);
+    for (int i = 0; i < tamanho; i++)
+    {
+        printf("%c - %d - %d - %d\n", vetor[i].processo, vetor[i].tempo, (int)vetor[i].chegada, vetor[i].prioridade);
+    }
+
+    
     Processo *copia = malloc(tamanho * sizeof(Processo));
     if (copia == NULL)
     {
-        fprintf(stderr, "Erro ao alocar memória para copia\n");
+        printf("Erro ao alocar memória para copia\n");
         exit(1);
     }
 
@@ -537,15 +534,14 @@ int main()
     {
         copia[i] = vetor[i]; // Cópia membro a membro (shallow, mas ok se Processo não tiver ponteiros)
     }
-
+    
     // inicializo as variaveis
     endTime = (int *)malloc(tamanho * sizeof(int));
 
     // FilaDinamica RoundRobin = roundRobin(copia, tamanho, 5, &TME, &TMR);
-    FilaDinamica fila = STRF(copia, tamanho, endTime);
-    geraArquivo(&fila, vetor, tamanho, endTime,"STF.txt");
-
-
+    FilaDinamica fila = STF(copia, tamanho, endTime);
+    geraArquivo(&fila, vetor, tamanho, endTime, "STF.txt");
+    
     // Copiando os elementos do vetor original para a copia
     for (int i = 0; i < tamanho; i++)
     {
@@ -553,6 +549,7 @@ int main()
     }
 
     fila = roundRobin(copia, tamanho, endTime);
-    geraArquivo(&fila, vetor, tamanho, endTime,"RoundRobin.txt");
+    geraArquivo(&fila, vetor, tamanho, endTime, "RoundRobin.txt");
     // desempilhaApresentando(&fon);
+    return 0;
 }
